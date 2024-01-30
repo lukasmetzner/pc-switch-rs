@@ -10,6 +10,7 @@ const CRAP: [char; 3] = ['\n', '\0', '\t'];
 const PIN: u8 = 21;
 
 fn switch_for_ms(ms: u64) -> Result<()> {
+    // TODO: set_low() does not turn off the relay
     let mut pin = Gpio::new()?.get(PIN)?.into_output();
     pin.set_high();
     thread::sleep(Duration::from_millis(ms));
@@ -18,7 +19,8 @@ fn switch_for_ms(ms: u64) -> Result<()> {
 
 fn remove_crap(s: &mut String) {
     let crap_count = s.chars().rev().take_while(|x| CRAP.contains(x)).count();
-    s.truncate(s.len().saturating_sub(crap_count));
+    let new_len = s.len().saturating_sub(crap_count);
+    s.truncate(new_len);
 }
 
 fn handle_client(stream: &mut TcpStream) -> Result<()> {
