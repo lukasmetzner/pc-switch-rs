@@ -26,7 +26,7 @@ fn handle_client(stream: &mut TcpStream) -> Result<()> {
     loop {
         let mut buff: [u8; 8] = [0; 8];
         reader.read(&mut buff)?;
-        let mut ms_str = String::from_utf8(buff.to_vec()).unwrap();
+        let mut ms_str = String::from_utf8(buff.to_vec())?;
         remove_crap(&mut ms_str);
         let ms: u64 = {
             match ms_str.parse() {
