@@ -1,18 +1,19 @@
 use anyhow::Result;
+use output_pin::OutputPin;
 use std::io::{BufReader, Read};
+use std::net::{TcpListener, TcpStream};
 use std::thread;
 use std::time::Duration;
 
-use rppal::gpio::{Gpio, OutputPin};
-use std::net::{TcpListener, TcpStream};
+pub mod output_pin;
 
 const CRAP: [char; 3] = ['\n', '\0', '\t'];
 const PIN: u8 = 21;
 
-fn switch_for_ms(pin: &mut OutputPin, ms: u64) -> Result<()> {
-    pin.set_low();
+fn switch_for_ms(ms: u64, pin: &OutputPin) -> Result<()> {
+    pin.set_low()?;
     thread::sleep(Duration::from_millis(ms));
-    pin.set_high();
+    pin.set_high()?;
     thread::sleep(Duration::from_millis(50));
     Ok(())
 }
@@ -23,7 +24,7 @@ fn remove_crap(s: &mut String) {
     s.truncate(new_len);
 }
 
-fn handle_client(stream: &mut TcpStream, pin: &mut OutputPin) -> Result<()> {
+fn handle_client(stream: &mut TcpStream, pin: &OutputPin) -> Result<()> {
     let mut reader = BufReader::new(stream);
     loop {
         let mut buff: [u8; 8] = [0; 8];
@@ -38,17 +39,19 @@ fn handle_client(stream: &mut TcpStream, pin: &mut OutputPin) -> Result<()> {
                 }
             }
         };
-        switch_for_ms(pin, ms)?;
+        switch_for_ms(ms, pin)?;
     }
     Ok(())
 }
 
 fn main() -> Result<()> {
+    let pin = OutputPin::new(PIN)?;
+    pin.set_high()?;
+
     let listener = TcpListener::bind("0.0.0.0:8000")?;
-    let mut pin = Gpio::new()?.get(PIN)?.into_output_high();
 
     for stream in listener.incoming() {
-        handle_client(&mut (stream?), &mut pin)?;
+        handle_client(&mut (stream?), &pin)?;
     }
 
     Ok(())
